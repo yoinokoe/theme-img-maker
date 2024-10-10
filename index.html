@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>お題画像作成ツール</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        canvas {
+            border: 1px solid black;
+            display: block;
+            margin: 0 auto;
+            max-width: 100vw;
+            max-height: 100vh;
+        }
+        #controls {
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>お題画像作成ツール</h1>
+    
+    <input type="file" id="imageLoader" accept="image/*"><br><br>
+
+    <div id="controls">
+        <label for="textInput">挿入する文章: </label><br>
+        <textarea id="textInput" rows="4" cols="40">好きな文章を入力してください</textarea><br><br>
+        
+        <label for="fontSize">文字サイズ: </label>
+        <input type="number" id="fontSize" value="50"><br><br>
+        
+        <label for="fontColor">文字色: </label>
+        <input type="color" id="fontColor" value="#000000"><br><br>
+        
+        <label for="fontFamily">フォント: </label>
+        <select id="fontFamily">
+            <option value="Arial">Arial</option>
+            <option value="Verdana">Verdana</option>
+            <option value="Times New Roman">Times New Roman</option>
+            <option value="Courier New">Courier New</option>
+        </select><br><br>
+        
+        <button id="downloadBtn">画像をダウンロード</button>
+    </div>
+
+    <canvas id="imageCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('imageCanvas');
+        const ctx = canvas.getContext('2d');
+        const imageLoader = document.getElementById('imageLoader');
+        const textInput = document.getElementById('textInput');
+        const fontSizeInput = document.getElementById('fontSize');
+        const fontColorInput = document.getElementById('fontColor');
+        const fontFamilySelect = document.getElementById('fontFamily');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        let img = new Image();
+        let imgAspectRatio = 1;
+        const originalWidth = 1920;
+        const originalHeight = 1080;
+
+        // 画像を読み込んだら、キャンバスに描画
+        imageLoader.addEventListener('change', function(e) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        });
+
+        // 画像が読み込まれたらキャンバスに描画
+        img.onload = function() {
+            imgAspectRatio = img.width / img.height;
+            resizeCanvas();
+            drawImageAndText();
+        };
+
+        // キャンバスをブラウザサイズにフィットさせる
+        function resizeCanvas() {
+            const browserWidth = window.innerWidth;
+            const browserHeight = window.innerHeight;
+
+            if (browserWidth / browserHeight < imgAspectRatio) {
+                canvas.width = browserWidth;
+                canvas.height = browserWidth / imgAspectRatio;
+            } else {
+                canvas.height = browserHeight;
+                canvas.width = browserHeight * imgAspectRatio;
+            }
+        }
+
+        // テキストの各行を描画
+        function drawText() {
+            const text = textInput.value.split('\n');
+            const fontSize = fontSizeInput.value;
+            const fontColor = fontColorInput.value;
+            const fontFamily = fontFamilySelect.value;
+
+            ctx.font = `${fontSize}px ${fontFamily}`;
+            ctx.fillStyle = fontColor;
+
+            const lineHeight = fontSize * 1.2; // 行間を少し広めに設定
+            const totalTextHeight = lineHeight * text.length;
+            let y = (canvas.height - totalTextHeight) / 2 + parseInt(fontSize);
+
+            // 各行のテキストをキャンバスの中央に描画
+            text.forEach(line => {
+                const textWidth = ctx.measureText(line).width;
+                const x = (canvas.width - textWidth) / 2;
+                ctx.fillText(line, x, y);
+                y += lineHeight;
+            });
+        }
+
+        // 画像とテキストを描画
+        function drawImageAndText() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            drawText();
+        }
+
+        // テキストやスタイルが変わった時に再描画
+        textInput.addEventListener('input', drawImageAndText);
+        fontSizeInput.addEventListener('input', drawImageAndText);
+        fontColorInput.addEventListener('input', drawImageAndText);
+        fontFamilySelect.addEventListener('change', drawImageAndText);
+
+        // ダウンロード用の高解像度画像を生成してダウンロード
+        downloadBtn.addEventListener('click', function() {
+            const downloadCanvas = document.createElement('canvas');
+            const downloadCtx = downloadCanvas.getContext('2d');
+
+            downloadCanvas.width = originalWidth;
+            downloadCanvas.height = originalHeight;
+
+            // 高解像度で画像を描画
+            downloadCtx.drawImage(img, 0, 0, originalWidth, originalHeight);
+
+            // 高解像度でテキストを描画
+            const text = textInput.value.split('\n');
+            const fontSize = fontSizeInput.value * (originalWidth / canvas.width);
+            const fontFamily = fontFamilySelect.value;
+            const fontColor = fontColorInput.value;
+            downloadCtx.font = `${fontSize}px ${fontFamily}`;
+            downloadCtx.fillStyle = fontColor;
+
+            const lineHeight = fontSize * 1.2;
+            const totalTextHeight = lineHeight * text.length;
+            let y = (originalHeight - totalTextHeight) / 2 + fontSize;
+
+            text.forEach(line => {
+                const textWidth = downloadCtx.measureText(line).width;
+                const x = (originalWidth - textWidth) / 2;
+                downloadCtx.fillText(line, x, y);
+                y += lineHeight;
+            });
+
+            // ダウンロード
+            const link = document.createElement('a');
+            link.download = 'downloaded_image.png';
+            link.href = downloadCanvas.toDataURL('image/png');
+            link.click();
+        });
+
+        // ブラウザリサイズ時に再描画
+        window.addEventListener('resize', function() {
+            resizeCanvas();
+            drawImageAndText();
+        });
+    </script>
+</body>
+</html>
