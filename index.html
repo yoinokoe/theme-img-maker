@@ -185,10 +185,11 @@
             });
             const totalHeight = lineHeight * text.length;
 
+            // 元の画像サイズを基準に座標を調整
             const xPos = parseInt(textXInput.value) - (textWidth / 2); // X座標調整
             const yPos = parseInt(textYInput.value) - (totalHeight / 2); // Y座標調整
 
-            let y = yPos + fontSize;
+            let y = yPos + parseInt(fontSize);
             text.forEach(line => {
                 downloadCtx.fillText(line, xPos, y);
                 y += lineHeight;
