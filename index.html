@@ -15,8 +15,8 @@
             border: 1px solid black;
             display: block;
             margin: 0 auto;
-            width: 1920px; /* 固定幅 */
-            height: 1080px; /* 固定高 */
+            width: 60vw;
+            height: auto;
         }
         #controls {
             margin: 20px;
@@ -51,16 +51,16 @@
             <option value="Courier New">Courier New</option>
         </select><br><br>
 
-        <label for="textX">X座標: </label>
+        <label for="textX">X座標 (1920基準): </label>
         <input type="number" id="textX" value="960"><br><br>
 
-        <label for="textY">Y座標: </label>
+        <label for="textY">Y座標 (1080基準): </label>
         <input type="number" id="textY" value="540"><br><br>
         
         <button id="downloadBtn">画像をダウンロード</button>
     </div>
 
-    <canvas id="imageCanvas"></canvas>
+    <canvas id="downloadCanvas"></canvas>
 
     <p>ヨイノコエ<a href="https://x.com/YOINOKOE_GROUP">公式X</a>のフォローお願いします！！</p>
     <p>不具合の報告やプログラムコードの確認については<a href="https://github.com/yoinokoe/theme-img-maker/tree/staging">こちら</a>をご確認ください。</p>
@@ -70,8 +70,8 @@
     </footer>
 
     <script>
-        const canvas = document.getElementById('imageCanvas');
-        const ctx = canvas.getContext('2d');
+        const downloadCanvas = document.getElementById('downloadCanvas');
+        const ctx = downloadCanvas.getContext('2d');
         const imageLoader = document.getElementById('imageLoader');
         const textInput = document.getElementById('textInput');
         const fontSizeInput = document.getElementById('fontSize');
@@ -83,6 +83,8 @@
         const currentYearElement = document.getElementById('currentYear');
 
         let img = new Image();
+        const originalWidth = 1920;
+        const originalHeight = 1080;
 
         // デフォルト画像を読み込み
         window.onload = function() {
@@ -99,14 +101,23 @@
         });
 
         img.onload = function() {
+            resizeCanvas();
             drawImageAndText();
         };
+
+        function resizeCanvas() {
+            downloadCanvas.width = originalWidth;
+            downloadCanvas.height = originalHeight;
+        }
 
         function drawText() {
             const text = textInput.value.split('\n');
             const fontSize = fontSizeInput.value;
             const fontColor = fontColorInput.value;
             const fontFamily = fontFamilySelect.value;
+
+            ctx.clearRect(0, 0, downloadCanvas.width, downloadCanvas.height); // キャンバスをクリア
+            ctx.drawImage(img, 0, 0, downloadCanvas.width, downloadCanvas.height); // 画像を描画
 
             ctx.font = `${fontSize}px ${fontFamily}`;
             ctx.fillStyle = fontColor;
@@ -124,7 +135,6 @@
             const yPos = parseInt(textYInput.value) - (totalHeight / 2); // Y座標調整
 
             let y = yPos + parseInt(fontSize);
-
             text.forEach(line => {
                 ctx.fillText(line, xPos, y);
                 y += lineHeight;
@@ -132,8 +142,6 @@
         }
 
         function drawImageAndText() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
             drawText();
         }
 
@@ -147,10 +155,14 @@
         downloadBtn.addEventListener('click', function() {
             const link = document.createElement('a');
             link.download = 'downloaded_image.png';
-            link.href = canvas.toDataURL('image/png');
+            link.href = downloadCanvas.toDataURL('image/png');
             link.click();
         });
 
+        window.addEventListener('resize', function() {
+            resizeCanvas();
+            drawImageAndText();
+        });
     </script>
 </body>
 </html>
